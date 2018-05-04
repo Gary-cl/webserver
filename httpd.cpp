@@ -7,12 +7,16 @@
 #include <cstdlib>
 #include <pthread.h>
 
-#include "tpool.h"
-#include "epoll.h"
+#include "thread_pool.h"
 
-int startup(u_short *port);
+#include "reactor.h"
+#include "event_handler.h"
+#include "listen_handler.h"
+#include "events.h"
+#include <fcntl.h>
 
-#define LSTENQ 5
+
+#define LSTENQ 10
 
 /* 配置socket并返回描述符 */
 int socket_init(u_short *port)
@@ -42,6 +46,7 @@ int socket_init(u_short *port)
             perror("getsockname");
             exit(1);
         }
+        const int INET_ADDR_LEN = 100;
         char serv_ip[INET_ADDR_LEN];
         inet_ntop(AF_INET, &serv_addr.sin_addr, serv_ip, sizeof(serv_ip));
         printf("bind in socket(\"%s\":%d)\n", serv_ip, ntohs(serv_addr.sin_port));
@@ -60,12 +65,19 @@ int main()
 {
     u_short port = 0;
     int lstfd = socket_init(&port); //listen socket
-    thread_pool_t *my_thread_pool = thread_pool_init(20);
 
-    while (1)
+    // 设置非阻塞IO
+    int flags = fcntl(lstfd, F_GETFL, 0);
+    fcntl(lstfd, F_SETFL, flags | O_NONBLOCK);
+
+    // epoll监听listen socket的读事件
+    Reactor &ractor = Reactor::get_instance();
+    EventHandler *handler = new ListenHandler(lstfd);
+    ractor.regist(handler, ReadEvent);
+    while (true)
     {
-        do_epoll(lstfd, my_thread_pool);
+        ractor.event_loop(-1);
+        printf("one loop\n");
     }
-    close(lstfd);
     return 0;
 }

@@ -1,5 +1,5 @@
-#ifndef TPOOL_H
-#define TPOOL_H
+#ifndef _THREAD_POOL_H_
+#define _THREAD_POOL_H_
 
 #include <pthread.h>
 
@@ -9,7 +9,7 @@ typedef void (*task_handler)(void *arg);
 // task节点
 typedef struct task_node
 {
-    task_handler func;
+    task_handler callback;
     void *arg;
     struct task_node *next;
 }task_node;

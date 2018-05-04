@@ -1,4 +1,5 @@
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -6,6 +7,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <errno.h>
+
+#define err_sys(info)                                                        \
+        {                                                                        \
+                fprintf(stderr, "%s:%s\n", info, strerror(errno));                \
+                exit(EXIT_FAILURE);                                                \
+        }
 
 #define INET_ADDR_LEN 100
 
@@ -32,18 +40,12 @@ void my_write(FILE *fp, int socket)
     }
 }
 
-int main(int argc, char *argv[])
+int tcp_connct(int port)
 {
     int cntfd = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in serv_addr;
-
-    if (argc != 2)
-    {
-        printf("please input port\n");
-        exit(1);
-    }
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(atoi(argv[1]));
+    serv_addr.sin_port = htons(port);
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr.s_addr) == -1)
     {
         error_die("inet_pton");
@@ -71,7 +73,64 @@ int main(int argc, char *argv[])
         printf("server(\"%s\":%d) connect to client(\"%s\":%d)\n", serv_ip, ntohs(serv_addr.sin_port), client_ip, ntohs(client_addr.sin_port));
     }
 
-    my_write(stdin, cntfd);
+    return cntfd;
+}
 
+int Fork()
+{
+    int ret = fork();
+    if (ret < 0)
+    {
+        perror("fork");
+    }
+    return ret;
+}
+
+int main(int argc, char *argv[])
+{
+    char request[100], reply[100];
+    if (argc != 5)
+    {
+        printf("input error\n");
+        exit(1);
+    }
+    int port = atoi(argv[1]);   // 端口
+    int nchildren = atoi(argv[2]); // 子进程数
+    int nloop = atoi(argv[3]);  // 每个子进程请求数
+    int nbyte = atoi(argv[4]);  // 每个请求要求的字节
+
+    snprintf(request, sizeof(request), "%d\n", nbyte);
+
+    for (int i = 0; i < nchildren; i++)
+    {
+        int pid;
+        if ((pid = Fork()) == 0)    // child
+        {
+            for (int j = 0; j < nloop; j++)
+            {
+                int fd = tcp_connct(port);
+                
+                write(fd, request, strlen(request));
+                printf("send: %s\n", request);
+                int n = 0;
+                if ((n = read(fd, reply, nbyte)) != nbyte)
+                {
+                    printf("read %d data\n", n);
+                }
+                printf("reply: %s\n", reply);
+                memset(reply, 0, sizeof(reply));
+                
+                close(fd);
+            }
+            printf("child %d done\n", i);
+            exit(0);
+        }
+        // parent
+    }
+    while (wait(NULL) > 0)
+    ;
+    if (errno != ECHILD)
+        err_sys("wait error");
+    
     return 0;
 }

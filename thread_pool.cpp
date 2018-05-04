@@ -1,7 +1,7 @@
-#include "tpool.h"
-#include <cstdio>
-#include <cstdlib>
-
+#include "thread_pool.h"
+#include <stdio.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void *thread_entry(void *arg);
 
@@ -25,23 +25,8 @@ static void *thread_entry(void *arg)
     pthread_mutex_unlock(&(pool->qlock));
 
     //回调函数
-    task->func(task->arg);
+    task->callback(task->arg);
     free(task);
-
-    /*
-    void *task;
-    pthread_t id = *(int*)arg;
-
-    pthread_mutex_lock(&my_thread_pool.qlock);
-    while (my_thread_pool.ready <= 0)
-    {
-        pthread_cond_wait(&my_thread_pool.ready_cond, &my_thread_pool.qlock);
-    }
-    task = get_task(my_thread_pool.tasks);
-    pthread_mutex_unlock(&my_thread_pool.qlock);
-
-    my_thread_pool.task_handler(task); //调用回调函数
-    */
 
     pthread_exit((void *)NULL);
     return NULL;
@@ -88,38 +73,6 @@ thread_pool_t* thread_pool_init(int thread_num)
         }
     }
 
-
-/*
-    tp->pthreads = (pthread_t*)malloc(sizeof(pthread_t) * size);
-    if (tp->pthreads == NULL)
-    {
-        fprintf(stderr, "malloc fail in thread_pool_init");
-    }
-
-    tp->thread_pool_size = size;
-
-
-
-    tp->tasks = list_create();
-    if(tp->tasks == NULL) {
-        fprintf(stderr, "list_create() error\n");
-        return ;
-    }
-
-    tp->task_handler = func;
-    tp->ready = 0;
-
-    for (int i = 0; i < size; ++i)
-    {
-        int err = pthread_create(&(tp->pthreads[i]), NULL, thread_entry, &i);
-        if (err == -1)
-        {
-            fprintf(stderr, "pthread_creare error\n");
-            free(tp->pthreads);
-            return;
-        }
-    }
-*/
     return pool;
 
 err:
@@ -127,7 +80,7 @@ err:
     return NULL;
 }
 
-/* 第一个task出队并被返回，这个task的内存将在被调用后才回收 */
+/* 返回第一个task node，这个node的内存将在被调用后才回收 */
 task_node *get_task(task_head_node *head)
 {
     task_node *node = head->next;
@@ -140,19 +93,9 @@ task_node *get_task(task_head_node *head)
     head->next = head->next->next;
     head->task_len--;
 
-/*
-    node = tasks->front->next;
-    if (node == tasks->tail)
-    {
-        printf("error\n");
-    }
-    tasks->front->next = tasks->front->next->next;
-    my_thread_pool.ready--;
-*/
     return node;
 }
 
-/* task入队 */
 void add_task(task_head_node *head, task_node* node)
 {
     if (!node)
@@ -166,21 +109,4 @@ void add_task(task_head_node *head, task_node* node)
 
     head->task_len++;
 
-    /*
-    tasks->tail->task = node.task;
-    tasks->tail->arg = node.arg;
-    tasks->tail->next = (task_node *)malloc(sizeof(task_node));
-    if (my_thread_pool.tasks->tail->next == NULL)
-    {
-        printf("malloc fail in add_task\n");
-    }
-
-    tasks->tail = tasks->tail->next;
-
-    tasks->tail->task = NULL;
-    tasks->tail->arg = -1;
-    tasks->tail->next = NULL;
-
-    my_thread_pool.ready++;
-    */
 }
