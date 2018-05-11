@@ -18,7 +18,7 @@
 
 #define LISTENQ 10
 
-const char * root_dir = "/home/user/Personal/code/c++/webserver/webdocs";
+const char * root_dir = "./webdocs";
 /* / 所指代的网页 */
 const char * home_page = "index.html";
 
