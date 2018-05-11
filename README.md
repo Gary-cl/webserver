@@ -21,7 +21,7 @@
 
 ### 2018.5.11
 - 修复了一些bug(工作线程与epoll竞争资源)
-- 参考了csapp，封装了带缓存的rio(read/write)
+- 参考了csapp，封装了带缓冲的rio(read/write)
 - 实现了GET命令，能显示主页
 
 
