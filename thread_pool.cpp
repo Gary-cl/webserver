@@ -26,6 +26,7 @@ static void *thread_entry(void *arg)
 
     //回调函数
     task->callback(task->arg);
+    free(task->arg);
     free(task);
 
     pthread_exit((void *)NULL);

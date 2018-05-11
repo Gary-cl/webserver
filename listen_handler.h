@@ -12,8 +12,8 @@ public:
     virtual ~ListenHandler();
 
     virtual handle_t get_handle() const { return listen_fd; }
-    virtual void handle_read(int *cntfd);
-    virtual void handle_write(int *cntfd) {}
+    virtual void handle_read();
+    virtual void handle_write() {}
     virtual void handle_error(); 
 
 private:

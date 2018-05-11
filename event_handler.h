@@ -14,8 +14,8 @@ public:
     /// 获取该handler所对应的句柄
     virtual handle_t get_handle() const = 0;
  
-    virtual void handle_read(int *cntfd) = 0;
-    virtual void handle_write(int *cntfd) = 0;
+    virtual void handle_read() = 0;
+    virtual void handle_write() = 0;
     virtual void handle_error() = 0;
 };
 

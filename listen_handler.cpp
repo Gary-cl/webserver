@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
-
+#include <fcntl.h>
 
 ListenHandler::ListenHandler(int fd) : listen_fd(fd)
 {
@@ -55,31 +55,30 @@ void pinfo(int cntfd)
 }
 
 
-void ListenHandler::handle_read(int *cntfd)
+void ListenHandler::handle_read()
 {
     int fd = -1;
     
     // 非阻塞调用 accept
     do
     {
-        if ((fd = accept( listen_fd, NULL, NULL )) == -1)
+        if ((fd = accept( listen_fd, NULL, NULL )) < 0)
         {
-            if (errno == EWOULDBLOCK)   // 数据读取完毕
+            if ((errno == EWOULDBLOCK) || (errno == EAGAIN))   // 数据读取完毕
             {
-                break;
-            }
-            else if (errno == EINTR || errno == EMFILE || errno == ECONNABORTED || errno == ENFILE ||
-                        errno == EPERM || errno == ENOBUFS || errno == ENOMEM)
-            {
-                perror("accept");//! if too many open files occur, need to restart epoll event
                 break;
             }
             perror("accept");
-            break;
+            exit(1);
         }
         printf("client socket = %d\n", fd);
         pinfo(fd);
         
+
+        // 设置非阻塞IO
+        int flags = fcntl(fd, F_GETFL, 0);
+        fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
         // 为已连接的socket注册可读事件
         EventHandler *h = new SocketHandler(fd);
         Reactor &r = Reactor::get_instance();

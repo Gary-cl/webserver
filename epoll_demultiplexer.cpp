@@ -54,6 +54,7 @@ int EpollDemultiplexer::wait_event(std::map<handle_t, EventHandler*> &handlers, 
         for (int i = 0; i < num; ++i)
         {
             handle_t handle = evs[i].data.fd ;
+            //printf("epoll_wait: fd = %d\n", handle);
             if ((EPOLLERR | EPOLLHUP) & evs[i].events)
             {
                 (handlers[handle])->handle_error();
@@ -62,11 +63,11 @@ int EpollDemultiplexer::wait_event(std::map<handle_t, EventHandler*> &handlers, 
             {
                 if ((EPOLLIN | EPOLLPRI) & evs[i].events)
                 {
-                    handlers[handle]->handle_read(&(evs[i].data.fd));
+                    handlers[handle]->handle_read();
                 }
                 if (EPOLLOUT & evs[i].events)
                 {
-                    handlers[handle]->handle_write(&(evs[i].data.fd));
+                    handlers[handle]->handle_write();
                 }
             }
         }
